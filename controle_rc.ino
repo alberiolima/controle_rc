@@ -5,7 +5,6 @@
  *  (conforme outras pessoas forem alterando o código seu nome será colocado aqui)
  *  
  */
-#include <SPI.h>
 #include <RF24.h>
 
 #define ctrl_joy0_botao   2 //Primeiro joystick botão
@@ -88,7 +87,7 @@ void loop() {
     }
     
     //ler botão do joystick 1
-    boolean joy0_BOTAO = digitalRead( ctrl_joy1_botao );
+    boolean joy0_BOTAO = digitalRead( ctrl_joy0_botao );
 
     //ler botão do joystick 2
     boolean joy1_BOTAO = digitalRead( ctrl_joy1_botao );
