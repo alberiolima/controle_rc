@@ -5,11 +5,9 @@
  *  (conforme outras pessoas forem alterando o código seu nome será colocado aqui)
  *  
  * 
- * 
- * 
  * pinagem modulo wireless
  * 
- * Nome  se8r01   UNO
+ * Nome  se8r01   PRO MINI(3.3V 8MHZ)
  * 3.3V   1       3.3V
  * GND    2       GND
  * CE     3       7
@@ -19,7 +17,6 @@
  * MISO   7       12
  * IRQ    8       8
  */
-
  
 #include "se8r01.h"
 
@@ -27,18 +24,14 @@
 #define ctrl_joy1_botao   3 //Segundo joystick botão
 #define intervaloEnvio   50 //Intervalo entre os envios
 
-struct potenciometro {
-  int maximo = 0;
-  int minimo = 2048;
-  int meio;
+struct potenciometro {  
   int porta;
+  int meio;
   int valor = 0;
 };
 potenciometro potenc[4];
 
 unsigned long tempoEnviar = 0;
-
-const uint64_t pipe = 0xE8E8F0F0E1LL;
 
 const int PAYLOAD_WIDTH = 12;
 
@@ -50,7 +43,9 @@ void init_radio() {
   setPower(POWER_5dbm);
   selectTxPipe(0);
   setRtr(15);
+  //setRfSpeed( SPEED_500Kbps );
   changeMode(TX_MODE);  
+  
 }
 
 void setup() {
@@ -70,23 +65,17 @@ void setup() {
   for( int pot=0;pot<4;pot++){
     pinMode( potenc[pot].porta, INPUT );
   }
-
+  delay(2);
   //Calibragem
   for(int i = 0;i<50;i++){
     for(int pot = 0;pot < 4; pot++){
       potenc[pot].valor += analogRead( potenc[pot].porta );   
     }
+    delay(1);
   }
   for (int pot = 0;pot < 4; pot++){
     potenc[pot].meio = ( potenc[pot].valor / 50 );
   }
-  
-  Serial.println( "meios" );
-  for (int pot = 0;pot < 4; pot++){
-    Serial.print( potenc[pot].meio  );
-    Serial.print( ' ' );  
-  }  
-  Serial.println();
 
   init_radio();
 
@@ -97,14 +86,13 @@ void loop() {
   if ( millis() >= tempoEnviar ) {
     tempoEnviar = millis() + intervaloEnvio;
 
-    //Trada os quatro potenciômetros
-    int dados_enviar = 0;
+    //Trata os quatro potenciômetros
     for (int pot = 0;pot < 4; pot++){
-      potenc[pot].valor = analogRead( potenc[pot].porta );    
-      if ( potenc[pot].valor < potenc[pot].minimo ) {
-        potenc[pot].minimo = potenc[pot].valor;
-      } else if (potenc[pot].valor > potenc[pot].maximo ) {
-        potenc[pot].maximo = potenc[pot].valor;
+      potenc[pot].valor = analogRead( potenc[pot].porta );
+      if ( potenc[pot].valor < potenc[pot].meio ) {
+        potenc[pot].valor = map( potenc[pot].valor, 0, potenc[pot].meio - 1, 0, 511  );
+      } else {
+        potenc[pot].valor = map( potenc[pot].valor, potenc[pot].meio, 1023, 512, 1023  );
       }
     }
     
@@ -132,12 +120,11 @@ void radioTX(){
     data[pot+pot] = potenc[pot].valor / 256;
     data[pot+pot+1] = potenc[pot].valor - ( data[pot+pot] * 256 );  
   }
-  data[8]=0;
-  data[9]=0;
-  data[10]=0;
-  data[11]=0;
+  data[8] = 0;
+  data[9] = 0;
+  data[10] = 0;
+  data[11] = 0;
   
   sendWithAck(data);
 
 }
-
